@@ -16,13 +16,11 @@
 ```
 # monkey language sightings
 ``` console
-
 let age = 1;
 let name = "Monkey";
+
 let result = 10 * (20 / 2);
-Besides integers, booleans and strings, the Monkey interpreter we’re going to build will also
-support arrays and hashes. Here’s what binding an array of integers to a name looks like:
-let myArray = [1, 2, 3, 4, 5];
+
 And here is a hash, where values are associated with keys:
 let thorsten = {"name": "Thorsten", "age": 28};
 Accessing the elements in arrays and hashes is done with index expressions:
@@ -38,6 +36,13 @@ And calling a function is as easy as you’d expect:
 add(1, 2);
 A more complex f
 ```
+# Besides integers, booleans and strings, the Monkey interpreter we’re going to build will also
+# support arrays and hashes. Here’s what binding an array of integers to a name looks like:
+
+``` console
+let myArray = [1, 2, 3, 4, 5];
+```
+
 
 # quick start
 ``` console

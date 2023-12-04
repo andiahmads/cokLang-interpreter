@@ -18,7 +18,7 @@ We will parse and evaluate our own language called cokLang.
 ```
 
 # COK language sightings
-``` c
+``` env
 let age = 1;
 let name = "Monkey";
 

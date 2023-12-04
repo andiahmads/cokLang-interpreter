@@ -1,18 +1,17 @@
-# interpreter-go
+# interpreter-Cok-Lang
 
-
-# mongkey lang specification
-``` console
-• C-like syntax
-• variable bindings
-• integers and booleans
-• arithmetic expressions
-• built-in functions
-• first-class and higher-order functions
-• closures
-• a string data structure
-• an array data structure
-• a hash data structure
+# COK lang specification
+```
+- C-like syntax
+- variable bindings
+- integers and booleans
+- arithmetic expressions
+- built-in functions
+- first-class and higher-order functions
+- closures
+- a string data structure
+- an array data structure
+- a hash data structure
 ```
 # monkey language sightings
 ``` console

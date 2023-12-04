@@ -8,8 +8,8 @@ import (
 
 func TestNextToken(t *testing.T) {
 
-	mongkyFile := "scenario1.mnky"
-	file, _ := os.ReadFile(mongkyFile)
+	cokFile := "scenario1.cok"
+	file, _ := os.ReadFile(cokFile)
 
 	tests := []struct {
 		expectedType    token.TokenType

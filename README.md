@@ -36,9 +36,8 @@ And calling a function is as easy as you’d expect:
 add(1, 2);
 A more complex f
 ```
-# Besides integers, booleans and strings, the Monkey interpreter we’re going to build will also
-# support arrays and hashes. Here’s what binding an array of integers to a name looks like:
 
+# support arrays and hashes. Here’s what binding an array of integers to a name looks like:
 ``` console
 let myArray = [1, 2, 3, 4, 5];
 ```

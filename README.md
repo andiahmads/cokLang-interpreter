@@ -26,7 +26,7 @@ let result = 10 * (20 / 2);
 
 ```
 
-Besides integers, booleans and strings, the Monkey interpreter we’re going to build will also
+Besides integers, booleans and strings, the cok interpreter we’re going to build will also
 support arrays and hashes. Here’s what binding an array of integers to a name looks like:
 ``` env
 let myArray = [1, 2, 3, 4, 5];
@@ -49,7 +49,7 @@ adds two numbers:
 let add = fn(a, b) { return a + b; };
 ```
 
-But Monkey not only supports return statements. Implicit return values are also possible, which means we can leave out the return if we want to:
+But cok not only supports return statements. Implicit return values are also possible, which means we can leave out the return if we want to:
 ``` env
 let add = fn(a, b) { a + b; };
 ```
@@ -74,10 +74,6 @@ if (x == 1) {
  }
 }
 ```
-
-
-
-
 
 # quick start
 ``` console

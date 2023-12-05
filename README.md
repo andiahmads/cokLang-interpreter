@@ -80,3 +80,12 @@ if (x == 1) {
 go test ./lexer
 ```
 
+
+# start REPL
+``` console
+go run main.go 
+```
+
+
+
+

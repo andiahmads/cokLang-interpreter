@@ -32,11 +32,9 @@ func (l *Lexer) readChar() {
 	} else {
 		l.ch = l.input[l.readPosition]
 	}
-
 	l.position = l.readPosition
 
 	l.readPosition += 1
-
 }
 
 // Yang perlu dilakukan oleh lexer kita adalah mengenali apakah karakter saat ini adalah huruf,
@@ -48,13 +46,27 @@ func (l *Lexer) NextToken() token.Token {
 	l.skipWhitespace()
 	switch l.ch {
 	case '=':
-		tok = newToken(token.ASSIGN, l.ch)
+		// jika setelah token ASSIGN ada  karakter '='
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.EQ, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = newToken(token.ASSIGN, l.ch)
+		}
+
 	case '+':
 		tok = newToken(token.PLUS, l.ch)
 	case '-':
 		tok = newToken(token.MINUS, l.ch)
 	case '!':
-		tok = newToken(token.BANG, l.ch)
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.NOT_EQ, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = newToken(token.BANG, l.ch)
+		}
 	case '/':
 		tok = newToken(token.SLASH, l.ch)
 	case '*':
@@ -139,4 +151,14 @@ func (l *Lexer) readNumber() string {
 // Fungsi ini hanya mengembalikan apakah byte yang dimasukkan adalah sebuah Angka Latin antara 0 dan 9.
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
+}
+
+// Ketika lexer menemukan == pada input, ia akan membuat dua token.ASSIGN, bukan satu token token.EQ token. Solusinya adalah dengan menggunakan metode peekChar() yang baru.
+// Di cabang-cabang dari pernyataan pernyataan switch untuk '=' dan '!' kita "mengintip" ke depan. Jika token berikutnya juga merupakan =, kita membuat token.EQ atau token.NOT_EQ:
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPosition]
+	}
 }

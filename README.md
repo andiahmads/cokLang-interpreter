@@ -1,4 +1,12 @@
 # The CokLang Programming Language & Interpreter
+```
+_________  ________   ____  __. .____       _____    _______    ________ 
+\_   ___ \ \_____  \ |    |/ _| |    |     /  _  \   \      \  /  _____/ 
+/    \  \/  /   |   \|      <   |    |    /  /_\  \  /   |   \/   \  ___ 
+\     \____/    |    \    |  \  |    |___/    |    \/    |    \    \_\  \
+ \______  /\_______  /____|__ \ |_______ \____|__  /\____|__  /\______  /
+        \/         \/        \/         \/       \/         \/        \/ 
+```
 Each interpreter is built to interpret a specific programming language. That's how you "implement" a programming language. 
 Without a compiler or interpreter, a programming language is nothing more than an idea or specification.  
 We will parse and evaluate our own language called cokLang.

@@ -84,6 +84,9 @@ go test ./lexer
 # start REPL
 ``` console
 go run main.go 
+
+REPL Examples:
+![Logo](repl/repl.png)
 ```
 
 

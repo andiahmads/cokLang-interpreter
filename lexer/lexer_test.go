@@ -7,7 +7,6 @@ import (
 )
 
 func TestNextToken(t *testing.T) {
-
 	cokFile := "scenario4.cok"
 	file, _ := os.ReadFile(cokFile)
 

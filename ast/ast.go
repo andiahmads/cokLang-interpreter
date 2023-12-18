@@ -98,14 +98,14 @@ func (rs *ReturnStatement) TokenLiteral() string {
 // let x = 5;
 // x + 10;
 // Baris pertama adalah pernyataan let, baris kedua adalah pernyataan ekspresi
-type ExpressionStatment struct {
+type ExpressionStatement struct {
 	Token      token.Token
 	Expression Expression
 }
 
-func (rs *ExpressionStatment) statementNode() {}
+func (rs *ExpressionStatement) statementNode() {}
 
-func (rs *ExpressionStatment) TokenLiteral() string {
+func (rs *ExpressionStatement) TokenLiteral() string {
 	return rs.Token.Literal
 }
 
@@ -149,7 +149,7 @@ func (rs *ReturnStatement) String() string {
 }
 
 // implementasi debugger untuk Expression statement
-func (es *ExpressionStatment) String() string {
+func (es *ExpressionStatement) String() string {
 	if es.Expression != nil {
 		return es.Expression.String()
 	}

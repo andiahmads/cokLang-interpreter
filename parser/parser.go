@@ -13,6 +13,17 @@ import (
 // Tugas utama parser adalah mengonversi inputan dalam bentuk teks atau data menjadi struktur data yang dapat dimengerti oleh komputer atau aplikasi.
 // Proses ini disebut parsing. Parser membaca input, mengenali pola-pola tertentu, dan kemudian membentuk representasi internal dari input tersebut.
 
+const (
+	_ int = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > or <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -X or !X
+	CALL        // myFunction(X)
+)
+
 // Parser memiliki tiga bidang: l, curToken dan peekToken.
 // l adalah sebuah penunjuk ke sebuah instance dari lexer, di mana kita berulang kali memanggil NextToken() untuk mendapatkan token berikutnya dalam input.
 type Parser struct {
@@ -26,8 +37,8 @@ type Parser struct {
 
 	// 	Dengan adanya peta-peta ini, kita tinggal memeriksa apakah peta yang sesuai (infiks atau awalan) memiliki penguraian
 	// yang terkait dengan curToken.Type.
-	prefixParseFn map[token.TokenType]prefixParseFn
-	infixParseFn  map[token.TokenType]infixParseFn
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFn   map[token.TokenType]infixParseFn
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -38,7 +49,19 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.nextToken()
 	p.nextToken()
+
+	// 	jika kita menemukan token bertipe token.IDENT, fungsi parsing yang akan dipanggil adalah
+	// parseIdentifier, metode yang kita definisikan pada *Parser.
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
+
 	return p
+}
+
+// Metode ini hanya mengembalikan sebuah *ast.Identifier dengan token saat ini di bidang Token dan nilai literal token di Value. Metode ini tidak memajukan
+// token, tidak memanggil nextToken. Ini sangat penting.
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curlToken, Value: p.curlToken.Literal}
 }
 
 func (p *Parser) nextToken() {
@@ -73,9 +96,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseLetStatement()
 	case token.RETURN:
 		return p.parseReturnStatement()
-
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -112,6 +134,31 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 		p.nextToken()
 	}
 	return stmt
+}
+
+// mem-parse pernyataan ekspresi jika kita tidak menemukan salah satu dari dua(let & return):
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curlToken}
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+	return stmt
+}
+
+// mengoperkan precedence serendah mungkin ke parseExpression
+// Yang dilakukannya adalah memeriksa apakah kita memiliki fungsi parsing yang terkait
+// dengan p.curToken.Type di posisi awalan. Jika ada, ia akan memanggil fungsi parsing ini, jika tidak ada, ia akan
+// mengembalikan nilai nol.
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curlToken.Type]
+	if prefix == nil {
+		return nil
+	}
+
+	leftExp := prefix()
+	return leftExp
 }
 
 // menemukan titik koma/SEMICOLON
@@ -193,7 +240,7 @@ type (
 )
 
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
-	p.prefixParseFn[tokenType] = fn
+	p.prefixParseFns[tokenType] = fn
 }
 
 func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {

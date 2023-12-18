@@ -159,3 +159,52 @@ func (es *ExpressionStatement) String() string {
 func (i *Identifier) String() string {
 	return i.Value
 }
+
+// * ast.IntegerLiteral memenuhi antarmuka ast.Expression, seperti halnya * ast.Identifier,
+// tetapi ada perbedaan penting dengan ast.Identifier dalam struktur itu sendiri:
+// Nilai adalah sebuah int64 dan bukan sebuah string.
+// Ini adalah bidang yang akan berisi nilai aktual yang diwakili oleh literal bilangan bulat yang diwakili dalam kode sumber.
+// Ketika kita membuat *ast.IntegerLiteral, kita harus mengonversi string dalam *ast.IntegerLiteral.Token.Literal (yang merupakan sesuatu seperti "5") menjadi int64.
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+func (il *IntegerLiteral) expressionNode() {}
+
+func (il *IntegerLiteral) TokenLiteral() string {
+	return il.Token.Literal
+}
+
+func (il *IntegerLiteral) String() string {
+	return il.Token.Literal
+}
+
+type PrefixExpression struct {
+	Token    token.Token // The prefix token, e.g. !
+	Operator string
+	Right    Expression
+}
+
+func (pe *PrefixExpression) expressionNode() {
+
+}
+
+func (pe *PrefixExpression) TokenLiteral() string {
+	return pe.Token.Literal
+}
+
+// Node *ast.PrefixExpression memiliki dua bidang yang perlu diperhatikan:
+// Operator dan Right. Operator adalah sebuah string yang akan berisi "-" atau "!". Bidang Right
+// berisi ekspresi di sebelah kanan operator.
+// Pada metode String() kita sengaja menambahkan tanda kurung di sekitar operator dan operand-nya,
+// ekspresi yang ada di ruas Kanan. Hal ini memungkinkan kita untuk melihat operan mana yang termasuk dalam operator yang mana.
+func (pe *PrefixExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(pe.Operator)
+	out.WriteString(pe.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}

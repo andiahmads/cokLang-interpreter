@@ -5,6 +5,7 @@ import (
 	"go-intepreter/ast"
 	"go-intepreter/lexer"
 	"go-intepreter/token"
+	"strconv"
 )
 
 // Parser adalah suatu program atau fungsi dalam suatu sistem komputer yang bertugas untuk menganalisis dan memproses suatu inputan dalam bentuk teks atau data
@@ -54,6 +55,11 @@ func New(l *lexer.Lexer) *Parser {
 	// parseIdentifier, metode yang kita definisikan pada *Parser.
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
+
+	p.registerPrefix(token.INT, p.parseIntegralLiteral)
+
+	p.registerPrefix(token.BANG, p.parsePrefixExpression)
+	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 
 	return p
 }
@@ -154,6 +160,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curlToken.Type]
 	if prefix == nil {
+		p.noPrefixParseFnError(p.curlToken.Type)
 		return nil
 	}
 
@@ -235,8 +242,10 @@ func (p *Parser) peekError(t token.TokenType) {
 type (
 	// 	prefixParseFns akan dipanggil ketika kita menemukan token yang terkait
 	// di posisi awalan dan infixParseFn dipanggil ketika kita menemukan tipe token di posisi infix
+	// Kedua tipe fungsi  ini mengembalikan sebuah ast.Expression,
 	prefixParseFn func() ast.Expression
-	infixParseFn  func(ast.Expression) ast.Expression
+	// infixParseFn mengambil argumen: ast.Expression lain.
+	infixParseFn func(ast.Expression) ast.Expression
 )
 
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
@@ -246,3 +255,77 @@ func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
 func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFn[tokenType] = fn
 }
+
+// INTEGRAL LITERAL
+// Literal bilangan bulat adalah ekspresi. Nilai yang dihasilkannya adalah bilangan bulat itu sendiri. Sekali lagi,
+// bayangkan di mana saja integer literal dapat muncul untuk memahami mengapa mereka adalah ekspresi
+// let x = 5;
+// add(5, 10);
+// 5 + 5 + 5;
+// Kita bisa menggunakan ekspresi lain selain literal bilangan bulat di sini dan ekspresi tersebut akan tetap valid
+
+// Seperti parseIdentifier, metode ini sangat sederhana. Satu-satunya hal yang benar-benar berbeda adalah pemanggilan strconv.ParseInt, yang mengubah string di p.curToken.Literal menjadi
+// int64. Int64 tersebut kemudian disimpan ke dalam bidang Value dan kita mengembalikan * simpul *ast.IntegerLiteral. Jika tidak berhasil, kita menambahkan kesalahan baru ke dalam kesalahan parser field
+func (p *Parser) parseIntegralLiteral() ast.Expression {
+	lit := &ast.IntegerLiteral{Token: p.curlToken}
+
+	value, err := strconv.ParseInt(p.curlToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.curlToken.Literal)
+		p.erros = append(p.erros, msg)
+		return nil
+	}
+
+	lit.Value = value
+	return lit
+}
+
+// Prefix Operators
+// Ada dua operator awalan dalam bahasa pemrograman CokLang: ! dan -.
+// Penggunaan mereka adalah hampir sama dengan apa yang Anda harapkan dari bahasa-bahasa lain:
+// -5;
+// !foobar;
+// 5 + -10;
+// Struktur penggunaannya adalah sebagai berikut:
+// <operator awalan <ekspresi>;
+// !isGreaterThanZero(2);
+// 5 + -add(5, 5);
+// Ini berarti bahwa simpul AST untuk ekspresi operator awalan harus cukup fleksibel untuk menunjuk ke ekspresi apa pun sebagai operan.
+
+// noPrefixParseFnError hanya menambahkan pesan kesalahan yang diformat ke
+// bidang kesalahan pada parser kita. Tetapi itu cukup untuk mendapatkan pesan kesalahan yang lebih baik dalam pengujian yang gagal
+func (p *Parser) noPrefixParseFnError(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s found", t)
+	p.erros = append(p.erros, msg)
+}
+
+// Untuk token.BANG dan token.MINUS kita mendaftarkan metode yang sama dengan prefixParseFn:
+// metode yang baru saja dibuat, yaitu parsePrefixExpression.
+// Metode ini membangun simpul AST, dalam hal ini *ast.PrefixExpression, sama seperti fungsi penguraian yang telah kita lihat sebelumnya.
+// Tetapi kemudian  melakukan sesuatu yang berbeda: metode ini benar-benar memajukan token kita dengan memanggil p.nextToken()!
+// Ketika parsePrefixExpression dipanggil, p.curToken akan bertipe token.BANG atau token.MINUS, karena jika tidak, fungsi ini tidak akan dipanggil.
+// Tetapi untuk mengurai ekspresi awalan dengan benar seperti -5, lebih dari satu token harus "dikonsumsi".
+// Jadi setelah menggunakan p.curToken untuk membangun sebuah *ast.PrefixExpression, metode ini memajukan token-token dan memanggil parseExpression lagi.
+// ketika parseExpression dipanggil oleh parsePrefixExpression, token-token telah dimajukan dan token saat ini adalah token setelah operator awalan. Dalam kasus -5, ketika parseExpression dipanggil, p.curToken.Type adalah token.INT.
+// parseExpression kemudian memeriksa yang terdaftar dan menemukan parseIntegerLiteral, yang membangun sebuah *ast.IntegerLiteral dan mengembalikannya.
+// parseExpression mengembalikan simpul yang baru.
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	expression := &ast.PrefixExpression{
+		Token:    p.curlToken,
+		Operator: p.curlToken.Literal,
+	}
+	p.nextToken()
+	expression.Right = p.parseExpression(PREFIX)
+	return expression
+}
+
+// Infix Operators
+// Selanjutnya kita akan menguraikan kedelapan operator infiks ini:
+// 5 + 5;
+// 5 - 5;
+// 5 * 5;
+// 5 / 5;
+// 5 > 5;
+// 5 < 5;
+// 5 == 5;
+// 5 != 5;

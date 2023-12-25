@@ -15,14 +15,14 @@ import (
 // Proses ini disebut parsing. Parser membaca input, mengenali pola-pola tertentu, dan kemudian membentuk representasi internal dari input tersebut.
 
 const (
-	_ int = iota
-	LOWEST
-	EQUALS      // ==
-	LESSGREATER // > or <
-	SUM         // +
-	PRODUCT     // *
-	PREFIX      // -X or !X
-	CALL        // myFunction(X)
+	_           int = iota
+	LOWEST          //merupakan suatu konstanta atau nilai tertentu yang menunjukkan tingkat precedensi terendah.
+	EQUALS          // ==
+	LESSGREATER     // > or <
+	SUM             // +
+	PRODUCT         // *
+	PREFIX          // -X or !X
+	CALL            // myFunction(X)
 )
 
 // Parser memiliki tiga bidang: l, curToken dan peekToken.
@@ -58,8 +58,20 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.registerPrefix(token.INT, p.parseIntegralLiteral)
 
+	// register prefix operator
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+
+	// register infix operator
+	p.infixParseFn = make(map[token.TokenType]infixParseFn)
+	p.registerInfix(token.PLUS, p.parseInfixExpression)
+	p.registerInfix(token.MINUS, p.parseInfixExpression)
+	p.registerInfix(token.SLASH, p.parseInfixExpression)
+	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
+	p.registerInfix(token.EQ, p.parseInfixExpression)
+	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
+	p.registerInfix(token.LT, p.parseInfixExpression)
+	p.registerInfix(token.GT, p.parseInfixExpression)
 
 	return p
 }
@@ -163,8 +175,19 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		p.noPrefixParseFnError(p.curlToken.Type)
 		return nil
 	}
-
 	leftExp := prefix()
+
+	// 	mencoba menemukan infixParseFns untuk token berikutnya. Jika ia menemukan fungsi tersebut, ia akan memanggilnya, melewatkan dalam ekspresi yang dikembalikan oleh prefixParseFn sebagai argumen.
+	// Dan ia melakukan semua ini lagi dan lagi sampai ia menemukan token yang memiliki prioritas lebih tinggi.
+	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+		infix := p.infixParseFn[p.peekToken.Type]
+		if infix == nil {
+			return leftExp
+		}
+		p.nextToken()
+		leftExp = infix(leftExp)
+
+	}
 	return leftExp
 }
 
@@ -320,6 +343,7 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 }
 
 // Infix Operators
+// Infix operators adalah operator-operasi matematika dan logika yang ditempatkan di antara dua operand
 // Selanjutnya kita akan menguraikan kedelapan operator infiks ini:
 // 5 + 5;
 // 5 - 5;
@@ -329,3 +353,53 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 // 5 < 5;
 // 5 == 5;
 // 5 != 5;
+
+// Tingkat precedensi (precedence level) adalah konsep yang digunakan dalam pemrograman untuk menentukan urutan evaluasi atau eksekusi operasi dalam suatu ekspresi.
+// Ini mengindikasikan seberapa kuat suatu operator memengaruhi operan-operandnya.
+// Contoh umumnya dapat ditemukan dalam ekspresi matematika. Misalnya, dalam ekspresi 3 + 5 * 2, kita tahu bahwa perkalian (*) memiliki tingkat precedensi yang lebih tinggi daripada penambahan (+).
+// Oleh karena itu, ekspresi tersebut akan dievaluasi sebagai 3 + (5 * 2), karena perkalian memiliki prioritas lebih tinggi.
+var precedences = map[token.TokenType]int{
+	token.EQ:       EQUALS,
+	token.NOT_EQ:   EQUALS,
+	token.LT:       LESSGREATER,
+	token.GT:       LESSGREATER,
+	token.PLUS:     SUM,
+	token.MINUS:    SUM,
+	token.SLASH:    PRODUCT,
+	token.ASTERISK: PRODUCT,
+}
+
+// Metode peekPrecedence mengembalikan prioritas yang terkait dengan tipe token p.peekToken.
+// Jika tidak menemukan prioritas untuk p.peekToken, maka akan menjadi LOWEST, yaitu prioritas terendah yang mungkin dimiliki oleh operator mana pun.
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedences[p.peekToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+// Metode curPrecedence melakukan hal yang sama, tetapi untuk p.curToken.
+func (p *Parser) curlPrecedence() int {
+	if p, ok := precedences[p.curlToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+//	metode baru ini mengambil sebuah argumen, sebuah ast.Expression bernama left.
+//
+// Metode ini menggunakan argumen ini untuk membuat simpul *ast.InfixExpression, dengan left berada di bidang Left.
+// Kemudian metode ini menetapkan prioritas token saat ini (yang merupakan operator dari ekspresi infix) ke prioritas variabel lokal.
+// sebelum memajukan token dengan memanggil nextToken dan mengisi bidang Kanan node dengan panggilan lain untuk menguraiEkspresi - kali ini dengan melewatkan prioritas token operator.
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	expression := &ast.InfixExpression{
+		Token:    p.curlToken,
+		Operator: p.curlToken.Literal,
+		Left:     left,
+	}
+
+	precedence := p.curlPrecedence()
+	p.nextToken()
+	expression.Right = p.parseExpression(precedence)
+	return expression
+}

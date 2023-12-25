@@ -86,6 +86,8 @@ if (x == 1) {
 # quick start
 ``` console
 go test ./lexer
+go test ./parser
+go test ./ast
 ```
 
 
